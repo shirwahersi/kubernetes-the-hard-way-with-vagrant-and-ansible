@@ -1,0 +1,95 @@
+---
+- name: Bootstrap Kube-API Server Loadbalancer
+  hosts: haproxy
+  become: yes
+  become_method: sudo
+  become_user: root
+  roles:
+    - { role: wtanaka.haproxy, tags: haproxy }
+    - { role: reallyenglish.hosts, tags: hosts-file}
+
+- name: Create kubernetes PKI Certs
+  hosts: localhost
+  connection: local
+  roles:
+    - { role: kubernetes.ca, tags: kube-certs }
+
+  post_tasks:
+    - name: Check if kubectl is installed
+      command: "/usr/local/bin/kubectl version --client --short=true"
+      ignore_errors: yes
+      register: kubectl_installed
+      changed_when: False
+
+    - set_fact:
+        kubectl_version: "Client Version: {{kube_version}}"
+
+    - name: Downloading kubectl binaries
+      get_url:
+        url: https://storage.googleapis.com/kubernetes-release/release/{{kube_version}}/bin/linux/amd64/kubectl
+        dest: "/usr/local/bin/"
+        mode: 0755
+      when: kubectl_installed.rc != 0 or kubectl_installed.stdout != kubectl_version
+      become: true
+
+    - name: Check if kubectl is installed
+      command: "/usr/local/bin/kubectl version --client --short=true"
+      ignore_errors: yes
+      register: kubectl_installed
+      changed_when: False
+
+    - name: kubectl config set-cluster
+      shell: |
+        kubectl config set-cluster kubernetes-the-hard-way \
+          --certificate-authority={{kube_ca_conf_directory}}/ca.pem \
+          --embed-certs=true \
+          --server=https://{{ hostvars['lb-0']['ip'] }}:6443
+      register: set_cluster
+
+    - debug:
+        msg: "COMMAND:{{set_cluster.cmd}} | OUTPUT: {{set_cluster.stdout}}"
+
+    - name: kubectl config set-credentials admin
+      shell: |
+        kubectl config set-credentials admin \
+          --client-certificate={{kube_ca_conf_directory}}/admin.pem  \
+          --client-key={{kube_ca_conf_directory}}/admin-key.pem
+      register: set_credentials
+
+    - debug:
+        msg: "COMMAND:{{set_credentials.cmd}} | OUTPUT: {{set_credentials.stdout}}"
+
+    - name: kubectl config set-context
+      shell: |
+        kubectl config set-context kubernetes-the-hard-way \
+          --cluster=kubernetes-the-hard-way \
+          --user=admin
+      register: set_context
+
+    - debug:
+        msg: "COMMAND:{{set_context.cmd}} | OUTPUT: {{set_context.stdout}}"
+
+    - name: kubectl config use-context
+      shell: |
+        kubectl config use-context kubernetes-the-hard-way
+      register: use_context
+
+    - debug:
+        msg: "COMMAND:{{use_context.cmd}} | OUTPUT: {{use_context.stdout}}"
+
+- name: Bootstrap Kubernetes Controller
+  hosts: kubernetes_controller
+  become: true
+  roles:
+    - { role: etcd, tags: etcd }
+    - { role: kubernetes.controller, tags: kube-controller}
+    - { role: reallyenglish.hosts, tags: hosts-file}
+    - { role: static-routes, tags: static-routes }
+
+- name: Bootstrap Kubernetes workers
+  hosts: kubernetes_node
+  become: true
+  roles:
+    - { role: kubernetes.worker, tags: kube-worker}
+    - { role: reallyenglish.hosts, tags: hosts-file}
+    - { role: static-routes, tags: static-routes }

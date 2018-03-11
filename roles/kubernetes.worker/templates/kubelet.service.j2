@@ -1,0 +1,42 @@
+#jinja2: trim_blocks:False
+[Unit]
+Description=Kubernetes Kubelet
+Documentation=https://github.com/kubernetes/kubernetes
+{% if containter_runtime == 'cri-containerd' -%}
+After=cri-containerd.service
+Requires=cri-containerd.service
+{% elif containter_runtime == 'docker' -%}
+After=docker.service
+Requires=docker.service
+{%- endif %}
+
+[Service]
+ExecStart=/usr/local/bin/kubelet \
+  --allow-privileged=true \
+  --anonymous-auth=false \
+  --authorization-mode=Webhook \
+  --client-ca-file=/var/lib/kubernetes/ca.pem \
+  --cloud-provider= \
+  --cluster-dns={{kube_cluster_dns}} \
+  --cluster-domain=cluster.local \
+  {% if containter_runtime == 'cri-containerd' -%}
+  --container-runtime=remote \
+  --container-runtime-endpoint=unix:///var/run/cri-containerd.sock \
+  {% elif containter_runtime == 'docker' -%}
+  --container-runtime=docker \
+  --docker=unix:///var/run/docker.sock \
+  {%- endif %}
+  --image-pull-progress-deadline=2m \
+  --kubeconfig=/var/lib/kubelet/{{inventory_hostname}}.kubeconfig  \
+  --network-plugin=cni \
+  --register-node=true \
+  --runtime-request-timeout=15m \
+  --tls-cert-file=/var/lib/kubernetes/{{inventory_hostname}}.pem \
+  --tls-private-key-file=/var/lib/kubernetes/{{inventory_hostname}}-key.pem \
+  --fail-swap-on=false \
+  --v=2
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,16 @@
+{
+  "CN": "admin",
+  "key": {
+    "algo": "rsa",
+    "size": {{ kube_ca_key_size }}
+  },
+  "names": [
+    {
+      "C": "{{ kube_ca_cert_country }}",
+      "L": "{{ kube_ca_cert_city }}",
+      "O": "system:masters",
+      "OU": "{{ kube_ca_cert_ou }}",
+      "ST": "{{ kube_ca_cert_province }}"
+    }
+  ]
+}

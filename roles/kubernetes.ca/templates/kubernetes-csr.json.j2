@@ -1,0 +1,26 @@
+{%- set hosts = ["10.32.0.1", "127.0.0.1","kubernetes.default", hostvars['lb-0']['ip']] -%}
+
+{% for host in groups['kubernetes_controller'] %}
+{{- hosts.append(host) -}}
+{%- for ipaddr in [hostvars[host]['ip']] -%}
+{{- hosts.append(ipaddr) -}}
+{% endfor %}
+{% endfor %}
+
+{
+  "CN": "kubernetes",
+  "hosts": {{ hosts | to_json }},
+  "key": {
+    "algo": "rsa",
+    "size": {{ kube_ca_key_size }}
+  },
+  "names": [
+    {
+      "C": "{{ kube_ca_cert_country }}",
+      "L": "{{ kube_ca_cert_city }}",
+      "O": "Kubernetes",
+      "OU": "{{ kube_ca_cert_ou }}",
+      "ST": "{{ kube_ca_cert_province }}"
+    }
+  ]
+}

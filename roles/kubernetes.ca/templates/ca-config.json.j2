@@ -1,0 +1,13 @@
+{
+  "signing": {
+    "default": {
+      "expiry": "{{ kube_ca_ca_expire }}"
+    },
+    "profiles": {
+      "{{ kube_ca_cert_name }}": {
+        "usages": ["signing", "key encipherment", "server auth", "client auth"],
+        "expiry": "{{ kube_ca_ca_expire }}"
+      }
+    }
+  }
+}

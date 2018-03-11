@@ -1,0 +1,99 @@
+---
+- name: Create Kubernetes config directory
+  file:
+    path: "{{kube_conf_dir}}"
+    state: directory
+    mode: 0700
+    owner: root
+    group: root
+  tags:
+    - k8s-flannel
+
+- name: Check if flannel network configuration in etcd is done
+  shell: "/usr/local/bin/etcdctl --ca-file=/etc/etcd/ca.pem --cert-file=/etc/etcd/kubernetes.pem --key-file=/etc/etcd/kubernetes-key.pem get {{flannel_etcd_prefix}}/config || true"
+  register: flannel_configured
+  delegate_to: "{{groups['kubernetes_controller']|first}}"
+
+- debug:
+    msg:  "{{ flannel_configured }}"
+
+
+- name: Setup flannel network configuration in etcd if needed
+  shell: "/usr/local/bin/etcdctl --ca-file=/etc/etcd/ca.pem --cert-file=/etc/etcd/kubernetes.pem --key-file=/etc/etcd/kubernetes-key.pem set {{flannel_etcd_prefix}}/config '{\"Network\":\"{{flannel_ip_range}}\",\"Backend\":{\"Type\": \"{{flannel_backend_type}}\"}}'"
+  when: flannel_configured.stderr.find('Key not found') != -1
+  run_once: true
+  delegate_to: "{{groups['kubernetes_controller']|first}}"
+  tags:
+    - k8s-flannel
+
+- name: Downloading official flanneld binary
+  get_url:
+    url: https://github.com/coreos/flannel/releases/download/{{flannel_version}}/flanneld-amd64
+    dest: "{{flannel_bin_dir}}/flanneld"
+    mode: 0750
+  tags:
+    - k8s-flannel
+
+- name: Install systemd service for flanneld
+  template:
+    src: flannel/flanneld.service.j2
+    dest: /etc/systemd/system/flanneld.service
+    owner: root
+    group: root
+    mode: 0644
+  notify:
+    - reload systemd
+  tags:
+    - k8s-flannel
+
+- name: Create flanneld configuration directory
+  file:
+    path: "{{flannel_options_dir}}"
+    state: directory
+    mode: 0700
+    owner: root
+    group: root
+  tags:
+    - k8s-flannel
+
+- name: Install options file for flanneld
+  template:
+    src: flannel/options.env.j2
+    dest: "{{flannel_options_dir}}/options.env"
+    owner: root
+    group: root
+    mode: 0644
+  notify:
+    - reload systemd
+  tags:
+    - k8s-flannel
+
+- name: Ensure CNI config directory
+  file:
+    path: "{{kube_cni_conf_dir}}"
+    state: directory
+    mode: 0755
+    owner: root
+    group: root
+  tags:
+    - k8s-flannel
+
+- name: Install flanneld CNI config
+  template:
+    src: flannel/cni-flannel.conf.j2
+    dest: "{{kube_cni_conf_dir}}/{{flannel_cni_conf_file}}.conf"
+    owner: root
+    group: root
+    mode: 0644
+  tags:
+    - k8s-flannel
+
+- meta: flush_handlers
+
+- name: Enable and start flanneld
+  service:
+    name: flanneld
+    enabled: yes
+    state: started
+  tags:
+    - k8s-flannel

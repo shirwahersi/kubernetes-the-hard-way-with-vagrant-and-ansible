@@ -1,0 +1,14 @@
+---
+- name: add persistent route
+  lineinfile:
+    dest: /etc/network/interfaces
+    regexp: "up route add -net {{ hostvars[item]['node_pod_cidr'] }}"
+    line: "up route add -net {{ hostvars[item]['node_pod_cidr'] }} gw {{ hostvars[item]['ip'] }}"
+  when: item != inventory_hostname
+  with_items: "{{ groups.kubernetes_node }}"
+
+- name: add current route to memory
+  command: "ip route add {{ hostvars[item]['node_pod_cidr'] }} via {{ hostvars[item]['ip'] }}"
+  ignore_errors: yes
+  when: item != inventory_hostname
+  with_items: "{{ groups.kubernetes_node }}"

@@ -1,0 +1,36 @@
+[all]
+lb-0              ansible_host=10.240.0.40 ip=10.240.0.40
+controller-0      ansible_host=10.240.0.10 ip=10.240.0.10
+controller-1      ansible_host=10.240.0.11 ip=10.240.0.11
+controller-2      ansible_host=10.240.0.12 ip=10.240.0.12
+worker-0          ansible_host=10.240.0.20 ip=10.240.0.20 node_pod_cidr=10.200.0.0/24
+worker-1          ansible_host=10.240.0.21 ip=10.240.0.21 node_pod_cidr=10.200.1.0/24
+worker-2          ansible_host=10.240.0.22 ip=10.240.0.22 node_pod_cidr=10.200.2.0/24
+
+[all:vars]
+# Change ansible python interpreter to Python 3, Ubuntu 16.04 does not come with python 2 by default.
+ansible_python_interpreter=/usr/bin/python3
+ansible_ssh_user='vagrant'
+ansible_ssh_private_key_file='~/.vagrant.d/insecure_private_key'
+
+[kubernetes_controller]
+controller-0
+controller-1
+controller-2
+
+[kubernetes_node]
+worker-0
+worker-1
+worker-2
+
+[etcd]
+controller-0
+controller-1
+controller-2
+
+[k8s-cluster:children]
+kubernetes_controller
+kubernetes_node
+
+[haproxy]
+lb-0

@@ -1,0 +1,36 @@
+---
+# The directory to store the kube certificates and other configuration
+kube_conf_dir: "/var/lib/kubernetes"
+# The directory to store the kube binaries
+kube_bin_dir: "/usr/local/bin"
+# kube release
+kube_version: v1.9.2
+# The directory from where to copy the kube certificates. By default this
+# will expand to user's LOCAL $HOME (the user that run's "ansible-playbook ..."
+# plus "/kube/certs". That means if the user's $HOME directory is e.g.
+# "/home/da_user" then "kube_ca_conf_directory" will have a value of
+# "/home/da_user/kube/certs".
+kube_ca_conf_directory: "{{ '~/kube/certs' | expanduser }}"
+# Directory where kubeconfig for Kubernetes worker nodes and kube-proxy
+# is stored among other configuration files. Same variable expansion
+# rule applies as with "kube_ca_conf_directory"
+kube_config_directory: "{{ '~/kube/configs' | expanduser }}"
+
+kube_service_cluster_ip_range: 10.32.0.0/24
+kube_cluster_cidr: 10.200.0.0/16
+
+# kube control plane binaries to download
+kube_controller_binaries:
+  - kube-apiserver
+  - kube-controller-manager
+  - kube-scheduler
+  - kubectl
+
+# kube encryption_config_key, move this valiable into ansible vault.
+kube_encryption_config_key: x8/6jBpivte/POt7uAE=
+
+kube_master_certificates:
+  - ca.pem
+  - ca-key.pem
+  - kubernetes-key.pem
+  - kubernetes.pem

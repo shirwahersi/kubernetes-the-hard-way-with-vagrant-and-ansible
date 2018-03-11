@@ -1,0 +1,64 @@
+kube_version: v1.9.3
+
+# DNS configuration.
+# Kubernetes cluster name, also will be used as DNS domain
+cluster_name: cluster.local
+# kube encryption_config_key, move this valiable into ansible vault.
+kube_encryption_config_key: SOZwKCNSiTNKgfQfEASBNGh/x8/6jBpivte/POt7uAE=
+
+# Choose network plugin (bridge, flannel)
+kube_network_plugin: bridge
+
+# Kubernetes internal network for services, unused block of space.
+kube_service_addresses: 10.233.0.0/18
+
+kube_cluster_cidr: 10.200.0.0/16
+
+kube_cluster_dns: 10.32.0.10
+
+kube_service_cluster_ip_range: 10.32.0.0/24
+
+# internal network. When used, it will assign IP
+# addresses from this range to individual pods.
+# This network must be unused in your network infrastructure!
+kube_pods_subnet: 10.233.64.0/18
+
+# Kubernetes PKI
+
+# The directory from where to copy the kube certificates. By default this
+# will expand to user's LOCAL $HOME (the user that run's "ansible-playbook ..."
+# plus "/kube/certs". That means if the user's $HOME directory is e.g.
+# "/home/da_user" then "kube_ca_conf_directory" will have a value of
+# "/home/da_user/kube/certs".
+kube_ca_conf_directory: "{{ '~/kube/certs' | expanduser }}"
+
+kube_ca_key_size: 2048
+kube_ca_ca_expire: 87600h
+kube_ca_key_expire: 87600h
+kube_ca_cert_country: UK
+kube_ca_cert_province: London
+kube_ca_cert_city: London
+kube_ca_cert_org: Shirwa Lab
+kube_ca_cert_email: test@test.com
+kube_ca_cert_ou: Shirwa Lab
+kube_ca_cert_name: kubernetes
+
+containter_runtime: docker
+
+# Generate /etc/hosts file
+hosts_enable_localhost: true
+hosts_extra_localhosts:
+  - "{{inventory_hostname}}"
+hosts_map:
+  "10.240.0.10":
+    - controller-0
+  "10.240.0.11":
+    - controller-1
+  "10.240.0.12":
+    - controller-2
+  "10.240.0.20":
+    - worker-0
+  "10.240.0.21":
+    - worker-1
+  "10.240.0.22":
+    - worker-2

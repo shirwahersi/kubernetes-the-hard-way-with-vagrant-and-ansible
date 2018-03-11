@@ -1,0 +1,103 @@
+---
+- name: Ensure download directory (used to store archives)
+  file:
+    path: "{{kube_worker_download_dir}}"
+    state: directory
+    mode: 0750
+  tags:
+    - kube-worker
+
+- name: Install additional network packages
+  apt:
+    state: installed
+    update_cache: yes
+    pkg: "{{item}}"
+  with_items:
+    - ebtables
+    - ethtool
+    - ipset
+    - conntrack
+    - iptables
+    - iptstate
+    - netstat-nat
+    - socat
+  tags:
+    - kube-worker
+  when: ansible_os_family == "Debian"
+
+- name: Install additional network packages
+  yum:
+    state: installed
+    name: "{{item}}"
+  with_items:
+    - ebtables
+    - ethtool
+    - ipset
+    - conntrack
+    - iptables
+    - iptstate
+    - net-tools
+    - socat
+  tags:
+    - kube-worker
+  when: ansible_os_family == "RedHat"
+
+- name: Ensure CNI plugins directory
+  file:
+    path: "{{kube_cni_dir}}"
+    state: directory
+    mode: 0700
+    owner: root
+    group: root
+  tags:
+    - kube-worker
+
+- name: Ensure CNI bin directory
+  file:
+    path: "{{kube_cni_bin_dir}}"
+    state: directory
+    mode: 0700
+    owner: root
+    group: root
+  tags:
+    - kube-worker
+
+- name: Download CNI plugins
+  get_url:
+    url: https://github.com/containernetworking/plugins/releases/download/v{{kube_cni_plugin_version}}/cni-plugins-amd64-v{{kube_cni_plugin_version}}.tgz
+    dest: "{{kube_worker_download_dir}}/{{kube_cni_plugin_version}}.tgz"
+    mode: 0640
+  tags:
+    - kube-worker
+
+- name: Unzip CNI plugins
+  unarchive:
+    src: "{{kube_worker_download_dir}}/{{kube_cni_plugin_version}}.tgz"
+    dest: "{{kube_cni_bin_dir}}"
+    remote_src: yes
+    creates: "{{kube_cni_dir}}/bin/bridge"
+
+- name: Ensure CNI config directory
+  file:
+    path: "{{kube_cni_conf_dir}}"
+    state: directory
+    mode: 0755
+    owner: root
+    group: root
+
+- name: Copy CNI bridge configuration
+  template:
+    src: 10-bridge.conf.j2
+    dest: "{{kube_cni_conf_dir}}/10-bridge.conf"
+    owner: root
+    group: root
+    mode: 0644
+  when: kube_network_plugin=="bridge"
+
+- name: Copy CNI loopback configuration
+  template:
+    src: 99-loopback.conf.j2
+    dest: "{{kube_cni_conf_dir}}/99-loopback.conf"
+    owner: root
+    group: root
+    mode: 0644

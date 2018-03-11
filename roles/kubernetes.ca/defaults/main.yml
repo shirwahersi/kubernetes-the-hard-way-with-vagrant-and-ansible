@@ -1,0 +1,19 @@
+---
+# The directory from where to copy the kube certificates. By default this
+# will expand to user's LOCAL $HOME (the user that run's "ansible-playbook ..."
+# plus "/kube/certs". That means if the user's $HOME directory is e.g.
+# "/home/da_user" then "kube_ca_conf_directory" will have a value of
+# "/home/da_user/kube/certs".
+
+kube_ca_cert_path: "{{ '~/kube/certs' | expanduser }}"
+
+kube_ca_key_size: 2048
+kube_ca_ca_expire: 87600h
+kube_ca_key_expire: 87600h
+kube_ca_cert_country: UK
+kube_ca_cert_province: London
+kube_ca_cert_city: London
+kube_ca_cert_org: Shirwa Lab
+kube_ca_cert_email: test@test.com
+kube_ca_cert_ou: Shirwa Lab
+kube_ca_cert_name: kubernetes

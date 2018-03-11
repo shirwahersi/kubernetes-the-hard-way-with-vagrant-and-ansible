@@ -1,0 +1,176 @@
+---
+- name: Install CNI plugins
+  import_tasks: cni.yaml
+
+- name: Install Docker
+  import_tasks: docker.yml
+  when: containter_runtime=="docker"
+  tags: docker
+
+- name: Install cri-containerd
+  import_tasks: cri-containerd.yml
+  when: containter_runtime=="cri-containerd"
+  tags: containerd
+
+- name: Create Kubernetes config directory
+  file:
+    path: "{{kube_conf_dir}}"
+    state: directory
+    mode: 0700
+    owner: root
+    group: root
+  tags:
+    - kube-worker
+
+- name: Copy worker certificates
+  copy:
+    src: "{{kube_ca_conf_directory}}/{{item}}"
+    dest: "{{kube_conf_dir}}/{{item}}"
+    mode: 0640
+    owner: root
+    group: root
+  with_items:
+    - "ca.pem"
+    - "kubernetes.pem"
+    - "kubernetes-key.pem"
+    - "{{inventory_hostname}}.pem"
+    - "{{inventory_hostname}}-key.pem"
+    - "kube-proxy.pem"
+    - "kube-proxy-key.pem"
+  tags:
+    - kube-worker
+
+- name: Ensure Kubelet config directory
+  file:
+    path: "{{kube_worker_kubelet_conf_dir}}"
+    state: directory
+    mode: 0700
+    owner: root
+    group: root
+  tags:
+    - kube-worker
+
+- name: Ensure Kubeproxy config directory
+  file:
+    path: "{{kube_worker_kubeproxy_conf_dir}}"
+    state: directory
+    mode: 0700
+    owner: root
+    group: root
+  tags:
+    - kube-worker
+
+- name: Ensure download directory (used to store archives)
+  file:
+    path: "{{kube_worker_download_dir}}"
+    state: directory
+    mode: 0750
+  tags:
+    - kube-worker
+
+- set_fact:
+    kubernetes_version: "Kubernetes {{kube_version}}"
+
+- set_fact:
+    kubectl_version: "Client Version: {{kube_version}}"
+
+- name: Check if kubelet is installed
+  command: "{{kube_bin_dir}}/kubelet --version"
+  ignore_errors: yes
+  register: kubelet_installed
+  changed_when: False
+
+- name: Check if kube-proxy is installed
+  command: "{{kube_bin_dir}}/kube-proxy --version"
+  ignore_errors: yes
+  register: kube_proxy_installed
+  changed_when: False
+
+- name: Check if kubectl is installed
+  command: "{{kube_bin_dir}}/kubectl version --client --short=true"
+  ignore_errors: yes
+  register: kubectl_installed
+  changed_when: False
+
+- name: Downloading kubelet binary
+  get_url:
+    url: https://storage.googleapis.com/kubernetes-release/release/{{kube_version}}/bin/linux/amd64/kubelet
+    timeout: 300
+    dest: "{{kube_bin_dir}}"
+    mode: 0755
+  notify:
+    - restart kubelet
+  when: kubelet_installed.rc != 0 or kubelet_installed.stdout != kubernetes_version
+
+- name: Downloading kube-proxy binary
+  get_url:
+    url: https://storage.googleapis.com/kubernetes-release/release/{{kube_version}}/bin/linux/amd64/kube-proxy
+    timeout: 300
+    dest: "{{kube_bin_dir}}"
+    mode: 0755
+  notify:
+    - restart kube-proxy
+  when: kube_proxy_installed.rc != 0 or kube_proxy_installed.stdout != kubernetes_version
+
+- name: Downloading kubectl binaries
+  get_url:
+    url: https://storage.googleapis.com/kubernetes-release/release/{{kube_version}}/bin/linux/amd64/kubectl
+    dest: "{{kube_bin_dir}}"
+    mode: 0755
+  when: kubectl_installed.rc != 0 or kubectl_installed.stdout != kubectl_version
+
+- name: Create Kubelet kubeconfig
+  template:
+    src: kubeconfig.j2
+    dest: "{{kube_worker_kubelet_conf_dir}}/{{ item }}.kubeconfig"
+    owner: root
+    group: root
+    mode: 0644
+  with_items:
+    - "{{ inventory_hostname }}"
+  notify:
+    - restart kubelet
+
+- name: Create Kubeproxy kubeconfig
+  template:
+    src: kube-proxy.kubeconfig
+    dest: "{{kube_worker_kubeproxy_conf_dir}}/kube-proxy.kubeconfig"
+    owner: root
+    group: root
+    mode: 0644
+  notify:
+    - restart kube-proxy
+
+- name: Create kubelet.service systemd file
+  template:
+    src: kubelet.service.j2
+    dest: /etc/systemd/system/kubelet.service
+    owner: root
+    group: root
+    mode: 0644
+  notify:
+    - reload systemd
+    - restart kubelet
+
+- name: Create kube-proxy.service systemd file
+  template:
+    src: kube-proxy.service.j2
+    dest: /etc/systemd/system/kube-proxy.service
+    owner: root
+    group: root
+    mode: 0644
+  notify:
+    - reload systemd
+    - restart kube-proxy
+
+- name: Enable Kubelet
+  service:
+    name: kubelet
+    enabled: yes
+    state: started
+
+- name: Enable kube-proxy
+  service:
+    name: kube-proxy
+    enabled: yes
+    state: started

@@ -1,0 +1,27 @@
+---
+# The directory from where to copy the kube certificates. By default this
+# will expand to user's LOCAL $HOME (the user that run's "ansible-playbook ..."
+# plus "/kube/certs". That means if the user's $HOME directory is e.g.
+# "/home/da_user" then "kube_ca_conf_directory" will have a value of
+# "/home/da_user/kube/certs".
+kube_ca_conf_directory: "{{ '~/kube/certs' | expanduser }}"
+
+# etcd version
+etcd_version: "3.2.13"
+# Port where etcd listening for clients
+etcd_client_port: "2379"
+# Port where etcd is listening for it's peer's
+etcd_peer_port: "2380"
+etcd_conf_dir: "/etc/etcd"
+# Directory to store downloaded etcd archive
+# Should not be deleted to avoid downloading over and over again
+etcd_download_dir: "/opt/etcd"
+# Directroy to store etcd binaries
+etcd_bin_dir: "/usr/local/bin"
+# etcd data directory (etcd database files so to say)
+etcd_data_dir: "/var/lib/etcd"
+# Certificate authority and certificate files for etcd
+etcd_certificates:
+  - ca.pem
+  - kubernetes-key.pem
+  - kubernetes.pem

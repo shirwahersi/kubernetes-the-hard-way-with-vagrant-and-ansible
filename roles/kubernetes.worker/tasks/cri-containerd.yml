@@ -1,0 +1,28 @@
+---
+- name: Create download directory (used to store archives)
+  file:
+    path: "{{temp_download_dir}}"
+    state: directory
+    mode: 0750
+
+- name: Downloading official cri-containerd binaries archive
+  get_url:
+    url: "https://github.com/containerd/cri-containerd/releases/download/v1.0.0-beta.1/cri-containerd-1.0.0-beta.1.linux-amd64.tar.gz"
+    dest: "{{temp_download_dir}}/cri-containerd-1.0.0-beta.1.linux-amd64.tar.gz"
+    mode: 0640
+
+- name: Unzip downloaded cri-containerd archive
+  unarchive:
+    src: "{{temp_download_dir}}/cri-containerd-1.0.0-beta.1.linux-amd64.tar.gz"
+    dest: "/"
+    creates: /usr/local/bin/cri-containerd
+    remote_src: yes
+
+- name: Enable and start cri-containerd
+  service:
+    name: "{{item}}"
+    enabled: yes
+    state: started
+  with_items:
+    - containerd
+    - cri-containerd

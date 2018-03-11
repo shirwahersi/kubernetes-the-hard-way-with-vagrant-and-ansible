@@ -1,0 +1,77 @@
+---
+# The directory to store the kube certificates and other configuration
+kube_conf_dir: "/var/lib/kubernetes"
+# The directory to store the kube binaries
+kube_bin_dir: "/usr/local/bin"
+# The directory from where to copy the kube certificates. By default this
+# will expand to user's LOCAL $HOME (the user that run's "ansible-playbook ..."
+# plus "/kube/certs". That means if the user's $HOME directory is e.g.
+# "/home/da_user" then "kube_ca_conf_directory" will have a value of
+# "/home/da_user/kube/certs".
+kube_ca_conf_directory: "{{ '~/kube/certs' | expanduser }}"
+# Directory where kubeconfig for Kubernetes worker nodes and kube-proxy
+# is stored among other configuration files. Same variable expansion
+# rule applies as with "kube_ca_conf_directory"
+kube_config_directory: "{{ '~/kube/configs' | expanduser }}"
+
+# kube worker binaries to download
+kube_worker_binaries:
+  - kube-proxy
+  - kubelet
+  - kubectl
+
+cluster_name: cluster.local
+kube_cluster_dns: 10.32.0.10
+
+# Download directory for archive files
+kube_worker_download_dir: "/opt/tmp"
+
+# Directory to store kubelet configuration
+kube_worker_kubelet_conf_dir: "/var/lib/kubelet"
+
+# Directroy to store kube-proxy configuration
+kube_worker_kubeproxy_conf_dir: "/var/lib/kube-proxy"
+
+temp_download_dir: "/opt/tmp"
+
+# Container Runtime
+
+docker_version: "17.03.2-ce"
+docker_user: "docker"
+docker_group: "docker"
+docker_uid: 666
+docker_gid: 666
+docker_bin_dir: "/usr/local/bin"
+docker_storage_driver: "overlay"
+docker_log_level: "error"
+docker_iptables: "false"
+docker_ip_masq: "false"
+docker_bip: ""
+docker_mtu: 1472
+
+etcd_certificates:
+  - ca.pem
+  - kubernetes.pem
+  - kubernetes-key.pem
+
+# CNI network plugin settings
+kube_cni_dir: "/opt/cni"
+kube_cni_bin_dir: "{{kube_cni_dir}}/bin"
+kube_cni_conf_dir: "/etc/cni/net.d"
+kube_cni_plugin_version: "0.6.0"
+
+# Flannel
+flannel_version: "v0.9.1"
+flannel_etcd_prefix: "/kubernetes-cluster/network"
+flannel_ip_range: "10.200.0.0/16"
+flannel_backend_type: "vxlan"
+flannel_cni_name: "podnet"
+flannel_subnet_file_dir: "/run/flannel"
+flannel_options_dir: "/etc/flannel"
+flannel_bin_dir: "/usr/local/sbin"
+flannel_ip_masq: "true"
+flannel_cni_conf_file: "10-flannel"
+flannel_healthz_ip: "0.0.0.0"
+flannel_healthz_port: "0" # 0 = disable
+
+containter_runtime: docker

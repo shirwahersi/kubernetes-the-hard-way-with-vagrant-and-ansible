@@ -1,0 +1,14 @@
+
+# Created by https://www.gitignore.io/api/ansible,vagrant
+
+## External roles ##
+roles/reallyenglish.hosts
+roles/wtanaka.haproxy
+
+### Ansible ###
+*.retry
+
+### Vagrant ###
+.vagrant/
+*.box
+*-console.log

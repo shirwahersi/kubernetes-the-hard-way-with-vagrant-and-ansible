@@ -1,0 +1,35 @@
+#jinja2: trim_blocks:False
+{%- macro cluster_hosts() -%}
+{%- for host in groups['etcd'] -%}
+{{ hostvars[host]['ansible_hostname']}}=https://{{hostvars[host]['ip'] }}:{{etcd_peer_port}}{% if not loop.last %},{% endif %}
+{%- endfor -%}
+{%- endmacro -%}
+
+[Unit]
+Description=etcd
+Documentation=https://github.com/coreos
+
+[Service]
+ExecStart=/usr/local/bin/etcd \
+  --name {{ansible_hostname}} \
+  --cert-file={{etcd_conf_dir}}/kubernetes.pem \
+  --key-file={{etcd_conf_dir}}/kubernetes-key.pem \
+  --peer-cert-file={{etcd_conf_dir}}/kubernetes.pem \
+  --peer-key-file={{etcd_conf_dir}}/kubernetes-key.pem \
+  --trusted-ca-file={{etcd_conf_dir}}/ca.pem \
+  --peer-trusted-ca-file={{etcd_conf_dir}}/ca.pem \
+  --peer-client-cert-auth \
+  --client-cert-auth \
+  --initial-advertise-peer-urls https://{{ hostvars[inventory_hostname]['ip'] }}:2380 \
+  --listen-peer-urls https://{{ hostvars[inventory_hostname]['ip'] }}:2380 \
+  --listen-client-urls https://{{ hostvars[inventory_hostname]['ip'] }}:2379,http://127.0.0.1:2379 \
+  --advertise-client-urls https://{{ hostvars[inventory_hostname]['ip'] }}:2379 \
+  --initial-cluster-token etcd-cluster-0 \
+  --initial-cluster {{ cluster_hosts() }} \
+  --initial-cluster-state new \
+  --data-dir=/var/lib/etcd
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
