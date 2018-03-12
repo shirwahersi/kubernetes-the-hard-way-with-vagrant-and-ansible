@@ -1,12 +1,11 @@
 # Kubernetes The Hard Way (Vagrant/Ansible)
 
-Vagrant  and Ansible configuration for a Kubernetes setup, the hard way.
+Vagrant  and Ansible configuration for a Kubernetes setup.
 
 The setup follows closely https://github.com/kelseyhightower/kubernetes-the-hard-way
 with the following exceptions:
 
 * `docker` is used as as default container runtime, `cri-containerd` is also supported.
-* The `pod-cidr` is `10.200.${i}.0/24`.
 * `10.240.0.40` is the IP of the loadbalancer (haproxy) for HA controllers
 
 ![Kubernetes Components](docs/kubernetes-architecture.png)
@@ -44,6 +43,8 @@ Create virtual machines:
 ```
 vagrant up
 ```
+
+> This takes around 5-10 mins, Take coffee/tea break.
 
 Check status of virtual machines:
 
@@ -107,6 +108,8 @@ Bootstrap Kubernetes 1.9 Cluster:
 ```
 ansible-playbook -i inventory k8s_cluster.yml
 ```
+
+> This takes around 10 mins, Take another coffee/tea break :)
 
 ## Check Cluster status
 
@@ -374,7 +377,7 @@ Expose the `nginx` deployment using a [NodePort](https://kubernetes.io/docs/conc
 kubectl expose deployment nginx --port 80 --type NodePort
 ```
 
-> The LoadBalancer service type can not be used because your cluster is not configured with [cloud provider integration](https://kubernetes.io/docs/getting-started-guides/scratch/#cloud-provider). Setting up cloud provider integration is out of scope for this tutorial.
+> The LoadBalancer service type can not be used in vagrant environment, this is only supported  in  Cloud environment such as GCP/AWS/Azure. See [Type LoadBalancer](https://kubernetes.io/docs/concepts/services-networking/service/#type-loadbalancer) for more details.
 
 Retrieve the node port assigned to the `nginx` service:
 
