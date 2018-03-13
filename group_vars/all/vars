@@ -1,4 +1,4 @@
-kube_version: v1.9.3
+kube_version: v1.9.4
 
 # DNS configuration.
 # Kubernetes cluster name, also will be used as DNS domain
